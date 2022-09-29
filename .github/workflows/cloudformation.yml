@@ -5,7 +5,7 @@ name: Deploy
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
-  push:
+  pull_request :
     branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Upload to S3
-        run: aws s3 mb s3://${{ now }}mybucket12345666
+        run: aws s3 mb s3://bucket11
        
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
