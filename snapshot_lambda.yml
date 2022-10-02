@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ActiveState Lambda function to retrieve latest Snapshot from Production RDS
+
+Resources:
+  LambdaLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      CompatibleRuntimes:
+        - python3.9
+      Content:
+        S3Bucket: activestatebucket
+        S3Key: python.zip
+      LayerName: "activestatelayers"
+  
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Layers: 
+        - !Ref LambdaLayer
+      FunctionName: ActiveStateGetRdsSnapshotLambda2
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Timeout: 50
+      Code:
+        ZipFile: |
+              import json
+              import boto3
+              import yaml
+              import io
+              from datetime import datetime, timezone
+              resource_name = "RDSCluster"
+              def lambda_handler(event, context):
+
+                  today = (datetime.today()).date()
+                  rds_client = boto3.client('rds')
+                  snapshots = rds_client.describe_db_cluster_snapshots(DBClusterIdentifier='database-1',MaxRecords=20)
+                  
+                  list=[]
+                  for x in snapshots['DBClusterSnapshots']:
+                      list.append(x['SnapshotCreateTime'])
+                  
+                  latestsnapshottime=max(list)
+                  
+                  for x in snapshots['DBClusterSnapshots']:
+                      if x['SnapshotCreateTime'] == latestsnapshottime:
+                          arnname = x['DBClusterSnapshotArn']
+                          response = {'result': arnname}
+                          # return response
+                          
+                  s3 = boto3.client('s3')
+                  s3.download_file('activestatebucket', 'ephemeralenv.yml','/tmp/ephemeralenv.yaml')
+
+                  with open("/tmp/ephemeralenv.yaml", "r") as stream:
+                      data = yaml.safe_load(stream) 
+                      # print(data)
+                      data['Resources']['RDSCluster']['Properties']['SnapshotIdentifier'] = arnname    
+
+                  
+                  with io.open('/tmp/final.yaml', 'w', encoding='utf8') as outfile:
+                      yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                      s3.upload_file("/tmp/final.yaml", "activestatebucket", "final.yaml")
+
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: GetRdsSnapshotLog
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - cloudwatch:GetMetricStatistics
+                  - logs:DescribeLogStreams
+                  - logs:GetLogEvents
+                Resource: "*"
+        - PolicyName: GetRdsSnapshotLambdaPower
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:Describe*
+                  - rds:ListTagsForResource
+                  - ec2:DescribeAccountAttributes
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeInternetGateways
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeVpcAttribute
+                  - ec2:DescribeVpcs
+                  - s3:*
+                  - s3-object-lambda:*
+                Resource: "*"
