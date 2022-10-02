@@ -15,16 +15,16 @@ Since automation is better than manual work. The less effort required for a deve
 
 Therefore, to simply the task we may assume: 
 
-1.) All of the developers in the team uses Git and Github 
-2.) The process for requestng a new environment can be tied to GitHub pull requests 
-3.) We have an existing CI-CD pipeline. 
+    1.) All of the developers in the team uses Git and Github 
+    2.) The process for requestng a new environment can be tied to GitHub pull requests 
+    3.) We have an existing CI-CD pipeline. 
 
 ### Benefits of Ephemeral Environment : 
 An ephemeral environment is a temporary short lived environment thats helps developer test their new changes of the application in an environment that is a replica of the production environment. It could have many services and databases that is an exact copy of the production so that when the final code is deployed to the production, the chances of having deployment failures are as low as possible. Ephemeral environments provide robust, on-demand platforms for running tests, previewing features, and collaborating asynchronously across teams.
 
 ### Some prerequisites to deploy this project
 
-a) You need to have access to the [git account](https://github.com/mr2chowd/activestate_assignment.git) and have knowledge of the basic git commands to do a pull request and cloning the repo. 
-b) You need to have access to the private s3 buckets where the stacks are saved to be run from the git workflow
-c) An AWS account with payment system enabled. Please note running this stack will incur cost and there are some expensive services used. Run with caution. 
-d) AWS Command Line Interface
+    a) You need to have access to the [git account](https://github.com/mr2chowd/activestate_assignment.git) and have knowledge of the basic git commands to do a pull request and cloning the repo. 
+    b) You need to have access to the private s3 buckets where the stacks are saved to be run from the git workflow
+    c) An AWS account with payment system enabled. Please note running this stack will incur cost and there are some expensive services used. Run with caution. 
+    d) AWS Command Line Interface
