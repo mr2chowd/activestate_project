@@ -29,14 +29,14 @@ jobs:
           AWS_DEFAULT_REGION: 'us-east-1'
       
       - name: Create the lambda function and run python script
-        run: aws cloudformation create-stack --stack-name lambda --capabilities CAPABILITY_IAM --template-url "https://activestatebucket.s3.amazonaws.com/snapshot_lambda.yml"
+        run: aws cloudformation create-stack --stack-name lambda2 --capabilities CAPABILITY_IAM --template-url "https://activestatebucket.s3.amazonaws.com/snapshot_lambda.yml"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: 'us-east-1'
           
       - name: This will ensure, the previous stack is complete before we trigger the lambda functioon
-        run: aws cloudformation wait stack-create-complete --stack-name lambda
+        run: aws cloudformation wait stack-create-complete --stack-name lambda2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
