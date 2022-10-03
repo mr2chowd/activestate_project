@@ -285,8 +285,7 @@ Resources:
               sudo yum install -y httpd
               sudo yum install -y wget
               cd /var/www/html
-              wget https://wali1317.s3.amazonaws.com/index.html
-              wget https://wali1317.s3.amazonaws.com/back3.jpg
+              wget https://activestatebucket.s3.amazonaws.com/index.html
               sudo service httpd start
               sudo yum install ruby -y
               sudo yum install aws-cli -y
