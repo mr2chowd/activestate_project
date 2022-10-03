@@ -61,6 +61,7 @@ that it ever existed. The following resources will be created to make the enviro
 14. Disaster recovery backup instances are created for the database in situations of lag in read operations 
 15. A Bastion Server is created to reach the database with secure connection
 16. SNS Topics are created to alert the Devops Engineer in case of any problems for the web server.
+
 ### Design Checks:
 All the codes will be given at the end and not in the steps to ensure readability.
 
