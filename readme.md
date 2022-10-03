@@ -54,9 +54,9 @@ All the codes will be given at the end and not in the steps to ensure readabilit
 Basic steps are below: 
     -   Save the "create_ephemeral.yml" [file](#script-1) and "delete_ephemeral.yml" [file](#script-2) codes in this directory ".github/workflows".  
     -   Update your Repository secrets
-        - Navigate to your repository on github and select Settings > Secrets > New repository secret 
-        - AWS_ACCESS_KEY_ID - your aws account access key id
-        - AWS_SECRET_ACCESS_KEY - your secret access key
+            a) Navigate to your repository on github and select Settings > Secrets > New repository secret 
+            b) AWS_ACCESS_KEY_ID - your aws account access key id
+            c) AWS_SECRET_ACCESS_KEY - your secret access key
     -   Ensure the lambda stack is saved in the activestate s3 bucket
     -   All the python dependencies are saved inside the s3 bucket as python.zip.
     -   Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
