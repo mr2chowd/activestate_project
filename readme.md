@@ -30,12 +30,20 @@ new changes of the application in an environment that is a replica of the produc
 
 1. You need to have access to the [git account](https://github.com/mr2chowd/activestate_assignment.git) and have knowledge of the basic git commands to do a pull request and cloning the repo.
 2. You need to have access to the private s3 buckets where the stacks are saved to be run from the git workflow
-3. An AWS account with payment system enabled. Please note running this stack will incur cost and there are some expensive services used. Run with caution.
+3. An AWS account. Note that running this stack will incur cost and there are some expensive services used. Run with caution.
 4. AWS Command Line Interface
 
 ### Design Summary 
 
-To simplify the design we assumed the developers are working on a simple static website where it has prebuilt CI-CD pipeline which they uses to deploy their applications. We are going to give them an ephemeral environment where all that they need to do is create a pull request to the repo and the environment will be created for them in less than 10 minutes. Once they are done with the environment, all that needs to be done is close the pull request which will delete all the services leaving no traces of ephemeral environment that ever existed. The following resources will be created to make the environment replicate the production environment : 
+To simplify the design we assumed the developers 
+are working on a simple static website where it has prebuilt CI-CD 
+pipeline which they uses to deploy their applications. 
+We are going to give them an ephemeral environment where all that they 
+need to do is create a pull request to the repo and the environment will 
+be created for them in less than 10 minutes. Once they are done with the 
+environment, all that needs to be done is close the pull request which
+will delete all the services leaving no traces of ephemeral environment 
+that it ever existed. The following resources will be created to make the environment replicate the production environment : 
     <br>
 1. A new VPC will be created to host the new servers and databases
 2. Two private subnets will be created to host the database
@@ -51,7 +59,7 @@ To simplify the design we assumed the developers are working on a simple static 
 12. RDS will be provided with the latest database files so that the environment can have the upto date data when tests are done. 
 13. Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated 
 14. Disaster recovery backup instances are created for the database in situations of lag in read operations 
-
+15. A Bastion Server is created to reach the database with secure connection
 ### Design Checks
 All the codes will be given at the end and not in the steps to ensure readability.
 
@@ -71,11 +79,15 @@ The process starts with creating an empty git repository and cloning it. Then we
 
 The script "create_ephemeral.yml" ensure the stacks and lambda functions are run in an order because of the dependancies. It starts by doing a sanity check of creating a bucket then it executes the lambda [stack](#Script-4). Lambda [stack](#Script-4) creates the lambda function in aws cloudformation and it also contains the python [script](#Script-3) which grabs the productions database's latest data snapshot from aws and attaches it to the final ephemeral scripts arn field. 
 
-Once the lambda [stack](#Script-4) is created, step-3 executes in the create_ephemeral.yml file where it runs a bash script which ensures that previous stack is created and fully completed.Then only step-4 is executed which invokes the lambda function. This sanity check is needed to ensure the lambda function is created fully before it can be executed.It also gives a buffer of 30 second which is more than enough for all the task to be completed.
+Once the lambda [stack](#Script-4) is created, step-3 in the create_ephemeral.yml file executes where it runs a bash script which ensures that previous stack is created and fully completed.Then only step-4 is executed which invokes the lambda function. This sanity check is needed to ensure the lambda function is created fully before it can be executed.It also gives a buffer of 30 second which is more than enough for all the task to be completed.
 
 The final execution completion of the lambda function ensures that the "ephemeralenv.yml" [stack](#Script-5) is good to go and latest database snapshot arn are inserted in the final.yaml stack.
 
+Once the developer is done with the ephemeral environment, they can choose to close the pull request 
+which will trigger the delete_ephemeral.yml [script](#script-2). It deletes all the stack that were created
+in logical order of last created. Upon completion, the whole environment will cease to exist leaving no traces of its existence.
 
+These following scripts were executed for the whole process to complete: 
 
 ### Script-1
 ### Create_ephemeral.yml 

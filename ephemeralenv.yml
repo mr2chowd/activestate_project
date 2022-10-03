@@ -418,10 +418,10 @@ Resources:
       DBClusterIdentifier: cluster2
       EngineVersion: 
         Ref: RDSEngineVersion
-      MasterUsername: "postgres"
-      MasterUserPassword: "postgres"
-      # MasterUsername: '{{resolve:secretsmanager:RDS/Aurora/Test/Credentials:SecretString:Username}}'
-      # MasterUserPassword: '{{resolve:secretsmanager:RDS/Aurora/Test/Credentials:SecretString:Password}}'
+      # MasterUsername: "postgres"
+      # MasterUserPassword: "postgres"
+      MasterUsername: '{{resolve:secretsmanager:RDS/Aurora/ActiveState/Credentials:SecretString:Username}}'
+      MasterUserPassword: '{{resolve:secretsmanager:RDS/Aurora/ActiveState/Credentials:SecretString:Password}}'
       DBSubnetGroupName: 
         Ref: DBSubnetGroup
       VpcSecurityGroupIds:
@@ -463,6 +463,49 @@ Resources:
           SourceSecurityGroupId: 
             Fn::GetAtt: [AsgSecurityGroup,GroupId]
 
+  ActiveStateBastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: fouronekey2
+      SubnetId: 
+        Ref: PublicSubnet1
+      ImageId: 
+        Ref: ImageId
+      InstanceType:  
+        Ref: InstanceType
+      SecurityGroupIds:
+        - Ref: SecurityGroup1
+      Tags:
+        - Key: "Name"
+          Value: "ActiveStateBastionServer"
+  SecurityGroup1:
+    Type: AWS::EC2::SecurityGroup
+    Description: Public Server Security Group
+    Properties:
+      GroupDescription: Allow ICMP and Tcp
+      VpcId: 
+        Ref: ActiveStateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 70.55.80.174/24
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  PublicServerElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: 
+        Ref: ActiveStateBastionServer
+      Tags:
+        - Key: "Name"
+          Value: "ActiveStateBastionServerElasticIp"
 Outputs:
   VPCID:
     Description: A reference output to the created ActiveState VPC ID
