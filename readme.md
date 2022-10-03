@@ -53,7 +53,7 @@ All the codes will be given at the end and not in the steps to ensure readabilit
 ## Step 1
 The process starts with creating an empty git repositoryy and cloning it. Then we can make a directory ".github/workflows where we save the steps that will execute when the pull request is executed. Please save the ["create_ephemeral.yml"](# Create_ephimeral.yml example) and "delete_ephemeral.yml"codes in this directory. 
 
-# Create_ephimeral.yml example
+## Create_ephimeral.yml example
 
 ```
 # This is a workflow which will create the ephemeral environment for ActiveState Developers
