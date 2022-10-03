@@ -373,5 +373,565 @@ Resources:
 ### Script-5
 ### Ephemeralenv.yml Script 
 ```
+Parameters:
+  RDSEngineVersion:
+    Type: String
+    Default: 13.6
+    AllowedValues:
+      - 13.3
+      - 13.4
+      - 13.5
+      - 13.6
+      - 13.7
+  EnvironmentName:
+    Description: Ephemeral Environment
+    Type: String
+    Default: ActiveStateEphemeral
 
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: fouronekey2
+    Description: The name of Key pair in parameter file to make SSH connection. Remember, Key should be available in your account.
+
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro    # free tier
+      - t2.medium   # $0.0464/hour
+      - t2.large    # $0.0928/hour
+      - a1.medium   # $0.0255/hour
+      - m6a.large   # $0.0864/hour
+      - t4g.medium  # $0.0336/hour
+    Description: Enter Instance type which is appropriate for you. As it is a exercise, I have used t2.micro.
+
+  ImageId:
+    Type: String
+    Default: ami-05fa00d4c63e32376
+    AllowedValues:
+      - ami-05fa00d4c63e32376  # free tier
+      - ami-02538f8925e3aa27a  # free tier
+    Description: Enter Image ID of Amazon Linux 2 type instances
+
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.192.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet-1 in the first Availability Zone
+    Type: String
+    Default: 10.192.0.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet-2 in the second Availability Zone
+    Type: String
+    Default: 10.192.1.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet-1 in the first Availability Zone
+    Type: String
+    Default: 10.192.2.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet-1 in the first Availability Zone
+    Type: String
+    Default: 10.192.3.0/24
+
+Resources:
+  ActiveStateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 
+        Ref: VpcCIDR
+      Tags:
+        - Key: Name
+          Value: ActiveStateEphVPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: us-east-1a
+      VpcId: 
+        Ref: ActiveStateVPC
+      CidrBlock: 
+        Ref: PublicSubnet1CIDR
+      Tags:
+        - Key: Name
+          Value: PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1b
+      VpcId: 
+        Ref: ActiveStateVPC
+      CidrBlock: 
+        Ref: PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet2
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      VpcId: 
+        Ref: ActiveStateVPC
+      CidrBlock: 
+        Ref: PrivateSubnet1CIDR
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1b
+      VpcId: 
+        Ref: ActiveStateVPC
+      CidrBlock: 
+        Ref: PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet2
+
+  InternetGateway1:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: User
+          Value: mr2chowd
+
+  InternetGatewayVPCAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: 
+        Ref: ActiveStateVPC
+      InternetGatewayId: 
+        Fn::GetAtt: [InternetGateway1,InternetGatewayId]
+
+  RouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: ActiveStateVPC
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: 
+        Ref: RouteTable1
+      SubnetId: 
+        Ref: PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: 
+        Ref: RouteTable1
+      SubnetId: 
+        Ref: PublicSubnet2
+
+  InternetGatewayRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: 
+        Ref: RouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: 
+        Fn::GetAtt: [InternetGateway1,InternetGatewayId]
+
+  NatGatewayEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: 
+        Ref: ActiveStateVPC
+
+  NateGateWay1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: 
+        Ref: PublicSubnet1
+      AllocationId: 
+        Fn::GetAtt: [NatGatewayEIP1,AllocationId]
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: ActiveStateVPC
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: 
+        Ref: PrivateRouteTable1
+      SubnetId: 
+        Ref: PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: 
+        Ref: PrivateRouteTable1
+      SubnetId: 
+        Ref: PrivateSubnet2
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: 
+        Ref: PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: 
+        Ref: NateGateWay1
+
+  IamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy
+
+  ProfileForEC2:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ProfileForEC2
+      Roles:
+        - Ref: IamRole
+
+  AsgSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: AsgTraffic
+      GroupDescription: Enable HTTP and SSH access on the inbound port for Asg
+      VpcId: 
+        Ref: ActiveStateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.192.0.0/16
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 70.55.80.174/32
+      Tags:
+        - Key: Name
+          Value: AsgSecurityGroup
+
+  AsgLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName:  ActiveStateLaunchTemplate
+      LaunchTemplateData:
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            AssociatePublicIpAddress: true
+            Groups:
+              - Ref: AsgSecurityGroup
+        InstanceType: 
+          Ref: InstanceType
+        KeyName: 
+          Ref: KeyPairName
+        ImageId: 
+          Ref: ImageId
+        IamInstanceProfile:
+          Arn: 
+            Fn::GetAtt: [ProfileForEC2,Arn]
+        Monitoring:
+          Enabled: True
+        UserData:
+          Fn::Base64:
+            Fn::Sub: |
+              #!/bin/bash
+              sudo yum update -y
+              sudo yum install -y httpd
+              sudo yum install -y wget
+              cd /var/www/html
+              wget https://activestatebucket.s3.amazonaws.com/index.html
+              sudo service httpd start
+              sudo yum install ruby -y
+              sudo yum install aws-cli -y
+              cd /home/ec2-user
+              wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
+              sudo chmod +x ./install
+              sudo ./install auto
+
+  WebserverGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - ELBTargetGroup
+      - ElasticLoadBalancer
+    Properties:
+      VPCZoneIdentifier:
+        - Ref: PublicSubnet1
+        - Ref: PublicSubnet2
+      LaunchTemplate:
+        LaunchTemplateId: 
+          Ref: AsgLaunchTemplate
+        Version: 
+          Fn::GetAtt: [AsgLaunchTemplate,LatestVersionNumber]
+      MinSize: 2
+      MaxSize: 5
+      DesiredCapacity: 2
+      HealthCheckGracePeriod: 300
+      MaxInstanceLifetime: 2592000
+      TargetGroupARNs:
+        - Ref: ELBTargetGroup
+      NotificationConfigurations:
+        - NotificationTypes:
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          TopicARN: 
+            Ref: ActiveStateSNSTopic
+
+  ScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: 
+        Ref: WebserverGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 40
+
+  ELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 6
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId: 
+        Ref: ActiveStateVPC
+      TargetType: instance
+
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ELBTraffic
+      GroupDescription: Enable HTTP access on the inbound port for ELB
+      VpcId: 
+        Ref: ActiveStateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ELBSecurityGroup
+
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - Ref: PublicSubnet1
+        - Ref: PublicSubnet2
+      SecurityGroups:
+        - Ref: ELBSecurityGroup
+
+  ElbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: 
+            Ref: ELBTargetGroup
+      LoadBalancerArn: 
+        Ref: ElasticLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  ActiveStateSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ActiveStateTopic
+
+  MySubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: mr2chowd@uwaterloo.ca
+      Protocol: email
+      TopicArn: 
+        Ref: ActiveStateSNSTopic
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DB Subnet Group for RDS
+      DBSubnetGroupName: DB SubnetGroup
+      SubnetIds:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+  RDSCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      SnapshotIdentifier: arn:heya
+      Engine: aurora-postgresql
+      DatabaseName: postgres
+      AvailabilityZones:
+        - us-east-1a
+      Port: 5432
+      DBClusterIdentifier: cluster2
+      EngineVersion: 
+        Ref: RDSEngineVersion
+      # MasterUsername: "postgres"
+      # MasterUserPassword: "postgres"
+      MasterUsername: '{{resolve:secretsmanager:RDS/Aurora/ActiveState/Credentials:SecretString:Username}}'
+      MasterUserPassword: '{{resolve:secretsmanager:RDS/Aurora/ActiveState/Credentials:SecretString:Password}}'
+      DBSubnetGroupName: 
+        Ref: DBSubnetGroup
+      VpcSecurityGroupIds:
+        - Fn::GetAtt: DBEC2SecurityGroup.GroupId
+
+  RDSInstance1:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: 
+        Ref: RDSCluster
+      DBInstanceClass: db.t4g.medium
+      DBInstanceIdentifier: Writer1
+      Engine: aurora-postgresql
+      AvailabilityZone: us-east-1a
+#      PubliclyAccessible: true
+
+  RDSFallbackRescueInstance1:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: 
+        Ref: RDSCluster
+      DBInstanceClass: db.t4g.medium
+      DBInstanceIdentifier: Reader1
+      Engine: aurora-postgresql
+      AvailabilityZone: us-east-1a
+#      PubliclyAccessible: true
+
+  DBEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: RDSWebServerTraffic
+      GroupDescription: Enable HTTP and SSH access on the inbound port for Asg
+      VpcId: 
+        Ref: ActiveStateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: 
+            Fn::GetAtt: [AsgSecurityGroup,GroupId]
+
+  ActiveStateBastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: fouronekey2
+      SubnetId: 
+        Ref: PublicSubnet1
+      ImageId: 
+        Ref: ImageId
+      InstanceType:  
+        Ref: InstanceType
+      SecurityGroupIds:
+        - Ref: SecurityGroup1
+      Tags:
+        - Key: "Name"
+          Value: "ActiveStateBastionServer"
+  SecurityGroup1:
+    Type: AWS::EC2::SecurityGroup
+    Description: Public Server Security Group
+    Properties:
+      GroupDescription: Allow ICMP and Tcp
+      VpcId: 
+        Ref: ActiveStateVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 70.55.80.174/24
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  PublicServerElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: 
+        Ref: ActiveStateBastionServer
+      Tags:
+        - Key: "Name"
+          Value: "ActiveStateBastionServerElasticIp"
+Outputs:
+  VPCID:
+    Description: A reference output to the created ActiveState VPC ID
+    Value: 
+      Ref: ActiveStateVPC
+    Export:
+      Name: ActiveState-vpc-id
+
+  PublicSubnetId1:
+    Description: Reference to the public subnet id 1
+    Value: 
+      Ref: PublicSubnet1
+    Export:
+      Name: ActiveState-publicsubnetid1
+
+  PublicSubnetId2:
+    Description: Reference to the public subnet id 2
+    Value: 
+      Ref: PublicSubnet2
+    Export:
+      Name: ActiveState-publicsubnetid2
+
+  PrivateSubnet1:
+    Description: A reference to the PRIVATE subnet in the 1st Availability Zone
+    Value: 
+      Ref: PrivateSubnet1
+    Export:
+      Name: ActiveState-privatesubnetid
+
+  OutputELBTargetGroup:
+    Description: A reference to the created Target Group
+    Value: 
+      Ref: ELBTargetGroup
+  OutputELBSecurityGroup:
+    Description: A reference to the created Security Group
+    Value: 
+      Ref: ELBSecurityGroup
+  OutputElasticLoadBalancer:
+    Description: A reference to the created Elastic Load Balancer
+    Value: 
+      Ref: ElasticLoadBalancer
+  OutputElasticListener:
+    Description: A reference to the created Elastic Load Balancer Listener
+    Value: 
+      Ref: ElbListener
+  OutputAsgLaunchTemplate:
+    Description: Id for autoscaling launch configuration
+    Value: 
+      Ref: AsgLaunchTemplate
+  OutputAsgGroup:
+    Description: Id for autoscaling group
+    Value: 
+      Ref: WebserverGroup
 ```
