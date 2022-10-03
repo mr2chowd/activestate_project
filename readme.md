@@ -53,6 +53,63 @@ All the codes will be given at the end and not in the steps to ensure readabilit
 ## Step 1
 The process starts with creating an empty git repositoryy and cloning it. Then we can make a directory ".github/workflows where we save the steps that will execute when the pull request is executed. Please save the "create_ephemeral.yml" [file](#script) codes in this directory. 
 
+```
+# This is a basic workflow to help you get started with Actions
+
+name: Deploy
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  # This workflow contains a single job called "build"
+  build:
+
+   # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Upload to S3
+        run: aws s3 rb s3://testbucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+          
+      - name: Delete the lambda function stack
+        run: aws cloudformation delete-stack --stack-name lambda2 
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+          
+      - name: Remove the final.yaml script
+        run: aws s3 rm s3://activestatebucket/final.yaml
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+          
+      - name: Delete the final ephimeral stack
+        run: aws cloudformation delete-stack --stack-name activestateephimeral 
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+          
+          
+          
+```
+
+
 #script
 
 ```
