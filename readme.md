@@ -48,25 +48,28 @@ To simplify the design we assumed the developers are working on a simple static 
     m) Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated
     n) Disaster recovery backup instances are created for the database in situations of lag in read operations 
 
-### Design Steps Summary
+### Design Checks
 All the codes will be given at the end and not in the steps to ensure readability.
 
+Basic steps are below: 
+    -   Save the "create_ephemeral.yml" [file](#script-1) and "delete_ephemeral.yml" [file](#script-2) codes in this directory ".github/workflows".  
+    -   Ensure the lambda stack is saved in the activestate s3 bucket
+    -   All the python dependencies are saved inside the s3 bucket as python.zip.
+    -   Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
+
+## Commentary of the design flow
 The process starts with creating an empty git repository and cloning it. Then we can make a directory ".github/workflows" where we save the steps that will run when the pull request is executed. An active state bucket is also created where various stacks are saved for bash execution in github workflows.
 
-    -   Save the "create_ephemeral.yml" [file](#script-1) and "delete_ephemeral.yml" [file](#script-2) codes in this directory ".github/workflows". 
+The script "create_ephemeral.yml" ensure the stacks and lambda functions are run in an order because of the dependancies. It starts by doing a sanity check of creating a bucket then it executes the lambda [stack](#Script-4). Lambda [stack](#Script-4) creates the lambda function in aws cloudformation and it also contains the python [script](#Script-3) which grabs the productions database's latest data snapshot from aws and attaches it to the final ephemeral scripts arn field. 
 
-The script "create_ephemeral.yml" ensure the stacks and lambda functions are run in an order because of the dependancies. It starts by doing a sanity check of creating a bucket then it executes the lambda [stack](#script-4). Lambda stack creates the lambda function in aws cloudformation and it also contains the python [script](#script-3) which grabs the productions database's latest data snapshot from aws and attaches it to the final ephemeral scripts arn field.
-    - 
-    Ensure the lambda stack is saved in the activestate s3 bucket
+Once the lambda [stack](#Script-4) is created, step-3 executes in the create_ephemeral.yml file where it runs a bash script which ensures that previous stack is created and fully completed.Then only step-4 is executed which invokes the lambda function. This sanity check is needed to ensure the lambda function is created fully before it can be executed.It also gives a buffer of 30 second which is more than enough for all the task to be completed.
 
-## Step 2
+The final execution completion of the lambda function ensures that the "ephemeralenv.yml" [stack](#Script-5) is good to go and latest database snapshot arn are inserted in the final.yaml stack.
 
 
 
-
+### Script-1
 ### Create_ephemeral.yml 
-### script-1
-
 ```
 # Create_ephemeral.yml Script Below:
 # This is a workflow which will create the ephemeral environment for ActiveState Developers
@@ -133,9 +136,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: 'us-east-1'
 ```
-### delete_ephemeral.yml 
-### script-2
 
+### Script-2
+### Delete_ephemeral.yml 
 ```
 # This is a workflow which will delete the ephemeral environment for ActiveState Developers
 
@@ -189,7 +192,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: 'us-east-1'        
 ```
-### script-3
+### Script-3
 ### Rdssnapshot.py Python Script 
 
 ```
@@ -229,5 +232,124 @@ jobs:
             with io.open('/tmp/final.yaml', 'w', encoding='utf8') as outfile:
                 yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True, sort_keys=False)
                 s3.upload_file("/tmp/final.yaml", "activestatebucket", "final.yaml")
+
+```
+### Script-4
+### Snapshot_lambda Script 
+
+```
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ActiveState Lambda function to retrieve latest Snapshot from Production RDS
+
+Resources:
+  LambdaLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      CompatibleRuntimes:
+        - python3.9
+      Content:
+        S3Bucket: activestatebucket
+        S3Key: python.zip
+      LayerName: "activestatelayers"
+  
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Layers: 
+        - !Ref LambdaLayer
+      FunctionName: ActiveStateGetRdsSnapshotLambda2
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Timeout: 50
+      Code:
+        ZipFile: |
+              import json
+              import boto3
+              import yaml
+              import io
+              from datetime import datetime, timezone
+              resource_name = "RDSCluster"
+              def lambda_handler(event, context):
+
+                  today = (datetime.today()).date()
+                  rds_client = boto3.client('rds')
+                  snapshots = rds_client.describe_db_cluster_snapshots(DBClusterIdentifier='database-1',MaxRecords=20)
+                  
+                  list=[]
+                  for x in snapshots['DBClusterSnapshots']:
+                      list.append(x['SnapshotCreateTime'])
+                  
+                  latestsnapshottime=max(list)
+                  
+                  for x in snapshots['DBClusterSnapshots']:
+                      if x['SnapshotCreateTime'] == latestsnapshottime:
+                          arnname = x['DBClusterSnapshotArn']
+                          response = {'result': arnname}
+                          # return response
+                          
+                  s3 = boto3.client('s3')
+                  s3.download_file('activestatebucket', 'ephemeralenv.yml','/tmp/ephemeralenv.yaml')
+
+                  with open("/tmp/ephemeralenv.yaml", "r") as stream:
+                      data = yaml.safe_load(stream) 
+                      # print(data)
+                      data['Resources']['RDSCluster']['Properties']['SnapshotIdentifier'] = arnname    
+
+                  
+                  with io.open('/tmp/final.yaml', 'w', encoding='utf8') as outfile:
+                      yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                      s3.upload_file("/tmp/final.yaml", "activestatebucket", "final.yaml")
+
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: GetRdsSnapshotLog
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - cloudwatch:GetMetricStatistics
+                  - logs:DescribeLogStreams
+                  - logs:GetLogEvents
+                Resource: "*"
+        - PolicyName: GetRdsSnapshotLambdaPower
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:Describe*
+                  - rds:ListTagsForResource
+                  - ec2:DescribeAccountAttributes
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeInternetGateways
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeVpcAttribute
+                  - ec2:DescribeVpcs
+                  - s3:*
+                  - s3-object-lambda:*
+                Resource: "*"
+
+```
+### Script-5
+### Ephemeralenv.yml Script 
+```
 
 ```
