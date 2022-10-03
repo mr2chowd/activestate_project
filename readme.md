@@ -40,7 +40,7 @@ are working on a simple static website where it has prebuilt CI-CD
 pipeline which they uses to deploy their applications. 
 We are going to give them an ephemeral environment where all that they 
 need to do is create a pull request to the repo and the environment will 
-be created for them in less than 10 minutes. Once they are done with the 
+be created for them in less than 15 minutes. Once they are done with the 
 environment, all that needs to be done is close the pull request which
 will delete all the services leaving no traces of ephemeral environment 
 that it ever existed. The following resources will be created to make the environment replicate the production environment : 
