@@ -26,14 +26,14 @@ Therefore, to simplify the task we may assume:
 An ephemeral environment is a temporary short-lived environment that helps developer test their 
 new changes of the application in an environment that is a replica of the production environment. It could have many services and databases that is an exact copy of the production so that when the final code is deployed to the production, the chances of having deployment bugs are as low as possible. Ephemeral environments provide robust, on-demand platforms for running tests, previewing features, and collaborating asynchronously across teams.
 
-### Some prerequisites to deploy this project
+### Some prerequisites to deploy this project:
 
 1. You need to have access to the [git account](https://github.com/mr2chowd/activestate_assignment.git) and have knowledge of the basic git commands to do a pull request and cloning the repo.
 2. You need to have access to the private s3 buckets where the stacks are saved to be run from the git workflow
 3. An AWS account. Note that running this stack will incur cost and there are some expensive services used. Run with caution.
 4. AWS Command Line Interface
 
-### Design Summary 
+### Design Summary:
 
 To simplify the design we assumed the developers 
 are working on a simple static website where it has prebuilt CI-CD 
@@ -60,7 +60,8 @@ that it ever existed. The following resources will be created to make the enviro
 13. Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated 
 14. Disaster recovery backup instances are created for the database in situations of lag in read operations 
 15. A Bastion Server is created to reach the database with secure connection
-### Design Checks
+
+### Design Checks:
 All the codes will be given at the end and not in the steps to ensure readability.
 
 Basic steps are below: 
@@ -74,7 +75,7 @@ Basic steps are below:
 4.  All the python dependencies are saved inside the s3 bucket as python.zip.
 5.  Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
 
-## Commentary of the design flow
+## Commentary of the design flow:
 The process starts with creating an empty git repository and cloning it. Then we can make a directory ".github/workflows" where we save the steps that will run when the pull request is executed. An active state bucket is also created where various stacks are saved for bash execution in github workflows.
 
 The script "create_ephemeral.yml" ensure the stacks and lambda functions are run in an order because of the dependancies. It starts by doing a sanity check of creating a bucket then it executes the lambda [stack](#Script-4). Lambda [stack](#Script-4) creates the lambda function in aws cloudformation and it also contains the python [script](#Script-3) which grabs the productions database's latest data snapshot from aws and attaches it to the final ephemeral scripts arn field. 
