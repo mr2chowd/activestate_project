@@ -51,7 +51,7 @@ To simplify the design we assumed the developers are working on a simple static 
 ### Execution Steps
 All the codes will be given at the end and not in the steps to ensure readability.
 ## Step 1
-The process starts with creating an empty git repositoryy and cloning it. Then we can make a directory ".github/workflows where we save the steps that will execute when the pull request is executed. Please save the "create_ephemeral.yml" [file](#script1) codes in this directory. 
+The process starts with creating an empty git repositoryy and cloning it. Then we can make a directory ".github/workflows where we save the steps that will execute when the pull request is executed. Please save the "create_ephemeral.yml" [file](#script-1) codes in this directory. 
 
 ```
 # This is a basic workflow to help you get started with Actions
@@ -111,7 +111,7 @@ jobs:
 
 
 ### Create_ephemeral.yml 
-### script1
+### script-1
 
 ```
 # This is a workflow which will create the ephemeral environment for ActiveState Developers
