@@ -32,21 +32,21 @@ An ephemeral environment is a temporary short lived environment thats helps deve
 ### Design Summary 
 
 To simplify the design we assumed the developers are working on a simple static website where it has prebuilt CI-CD pipeline which they uses to deploy their applications. We are going to give them an ephemeral environment where all that they need to do is create a pull request to the repo and the environment will be created for them in less than 10 minutes. Once they are done with the environment, all that needs to be done is close the pull request which will delete all the services leaving no traces of ephemeral environment that ever existed. The following resources will be created to make the environment replicate the production environment : 
-
-    a) A new VPC will be created to host the new servers and databases
-    b) Two private subnets will be created to host the database
-    c) Two public subnets will be created for the web front end to be hosted
-    d) Internet Gateway will be attached to the VPC for outside connectivity
-    e) NatGateway will be provided so that private subnet also has indirect connection to the do any kinds of updates and downloads from the internet in a secure way 
-    f) Route tables will be created to ensure proper routing and subnet associations
-    g) Proper IAM roles are provided in the stacks for the Lambda functions as well as EC2 instances where the websites will be hosted
-    h) Security groups will be provided for Bastion Server as well as the EC2 instances where the webserver will be hosted
-    i) Auto Scaling Groups will be created so that when the CPU utilizations reach a certain threshold, new instances will be created to cope up with the increased request and traffic 
-    j) Launch Template will be provided for resuability and version controlling of type of EC2 instances that needs to be scaled 
-    k) Load Balancers will be created to equally divided the load of the web application to different servers on different Availabilty Zone
-    l) RDS will be provided with the latest database files so that the environment can have the upto date data when tests are done. 
-    m) Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated
-    n) Disaster recovery backup instances are created for the database in situations of lag in read operations 
+    <br>
+1. A new VPC will be created to host the new servers and databases
+2. Two private subnets will be created to host the database
+3. Two public subnets will be created for the web front end to be hosted
+4. Internet Gateway will be attached to the VPC for outside connectivity
+5. NatGateway will be provided so that private subnet also has indirect connection to the do any kinds of updates and downloads from the internet in a secure way
+6. Route tables will be created to ensure proper routing and subnet associations
+7. Proper IAM roles are provided in the stacks for the Lambda functions as well as EC2 instances where the websites will be hosted 
+8. Security groups will be provided for Bastion Server as well as the EC2 instances where the webserver will be hosted 
+9. Auto Scaling Groups will be created so that when the CPU utilizations reach a certain threshold, new instances will be created to cope up with the increased request and traffic 
+10. Launch Template will be provided for resuability and version controlling of type of EC2 instances that needs to be scaled 
+11. Load Balancers will be created to equally divided the load of the web application to different servers on different Availabilty Zone 
+12. RDS will be provided with the latest database files so that the environment can have the upto date data when tests are done. 
+13. Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated 
+14. Disaster recovery backup instances are created for the database in situations of lag in read operations 
 
 ### Design Checks
 All the codes will be given at the end and not in the steps to ensure readability.
