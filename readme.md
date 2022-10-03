@@ -74,6 +74,7 @@ Basic steps are below:
 3.  Ensure the lambda stack is saved in the activestate s3 bucket
 4.  All the python dependencies are saved inside the s3 bucket as python.zip.
 5.  Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
+6. To increase security, save your database credentials in the AWS Secrets Manager
 
 ## Commentary of the design flow:
 The process starts with creating an empty git repository and cloning it. Then we can make a directory ".github/workflows" where we save the steps that will run when the pull request is executed. An active state bucket is also created where various stacks are saved for bash execution in github workflows.
