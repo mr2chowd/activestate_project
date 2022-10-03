@@ -31,7 +31,7 @@ An ephemeral environment is a temporary short lived environment thats helps deve
 
 ### Design Summary 
 
-To simplify the design we assumed the developers are working on a simple static website where it has a prebuilt CI-CD pipeline which they uses to deploy their applications. We are going to give them an ephemeral environment environment where all that they need to do is create a pull request to the repo and the environment will be created for them in less than 10 minutes. Once they are done with the environment, all that needs to be done is close the pull request which will delete all the services leaving no traces of ephemeral environment that ever existed. The following resources will be created to make the environment replicate the production environment : 
+To simplify the design we assumed the developers are working on a simple static website where it has prebuilt CI-CD pipeline which they uses to deploy their applications. We are going to give them an ephemeral environment where all that they need to do is create a pull request to the repo and the environment will be created for them in less than 10 minutes. Once they are done with the environment, all that needs to be done is close the pull request which will delete all the services leaving no traces of ephemeral environment that ever existed. The following resources will be created to make the environment replicate the production environment : 
 
     a) A new VPC will be created to host the new servers and databases
     b) Two private subnets will be created to host the database
@@ -48,4 +48,75 @@ To simplify the design we assumed the developers are working on a simple static 
     m) Lambda functions will be created to attain the latest database copy snapshot and change the ephemeral stack with latest arn so that the whole process is completely automated
     n) Disaster recovery backup instances are created for the database in situations of lag in read operations 
 
+### Execution Steps
+All the codes will be given at the end and not in the steps to ensure readability.
+## Step 1
+The process starts with creating an empty git repositoryy and cloning it. Then we can make a directory ".github/workflows where we save the steps that will execute when the pull request is executed. Please save the ["create_ephemeral.yml"](# Create_ephimeral.yml example) and "delete_ephemeral.yml"codes in this directory. 
 
+# Create_ephimeral.yml example
+
+```
+# This is a workflow which will create the ephemeral environment for ActiveState Developers
+name: Deploy
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request_target:
+    branches: [ main ]
+    types: [assigned, opened, synchronize, reopened]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+   # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # This first step does a sanity check by creating a bucket
+    steps:
+      - name: Upload to S3
+        run: aws s3 mb s3://testbucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+    # This second step runs the stack which will create the lambda function,make sure you have saved your script in a s3 bucket
+    # and change the link of the file as per your need
+      - name: Create the lambda function and run python script
+        run: aws cloudformation create-stack --stack-name lambda2 --capabilities CAPABILITY_IAM --template-url "https://activestatebucket.s3.amazonaws.com/snapshot_lambda.yml"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+     # This third step ensure that the previous stack is completed, before the lambda function can be trigerred        
+      - name: This will ensure, the previous stack is complete before we trigger the lambda functioon
+        run: aws cloudformation wait stack-create-complete --stack-name lambda2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+      
+      # This fourth step ensure that the lambda function is triggered and given 30 seconds to finish   
+      
+      - name: This will ensure, the previous stack is complete before we trigger the lambda functioon
+        run: aws lambda invoke --function-name ActiveStateGetRdsSnapshotLambda2 response.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+          
+      - name: This will wait for the lambda to trigger and make the necessary changes before the next stack is run
+        run: sleep 30
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+
+      # This final step ensure we run the final ephemeral environment stack with latest snapshot ids
+      - name: Running the final.yaml script that contains the rest of the ephimeral enviroment scripts
+        run: aws cloudformation create-stack --stack-name activestateephimeral --capabilities CAPABILITY_IAM --template-url "https://activestatebucket.s3.amazonaws.com/final.yaml"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-east-1'
+```
