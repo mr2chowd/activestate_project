@@ -52,14 +52,14 @@ To simplify the design we assumed the developers are working on a simple static 
 All the codes will be given at the end and not in the steps to ensure readability.
 
 Basic steps are below: 
-    -   Save the "create_ephemeral.yml" [file](#script-1) and "delete_ephemeral.yml" [file](#script-2) codes in this directory ".github/workflows".  
-    -   Update your Repository secrets:
-          Navigate to your repository on github and select Settings > Secrets > New repository secret 
-          AWS_ACCESS_KEY_ID - your aws account access key id
-          AWS_SECRET_ACCESS_KEY - your secret access key
-    -   Ensure the lambda stack is saved in the activestate s3 bucket
-    -   All the python dependencies are saved inside the s3 bucket as python.zip.
-    -   Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
+    1.  Save the "create_ephemeral.yml" [file](#script-1) and "delete_ephemeral.yml" [file](#script-2) codes in this directory ".github/workflows".  
+    2.  Update your Repository secrets:
+        -  Navigate to your repository on github and select Settings > Secrets > New repository secret 
+        -  AWS_ACCESS_KEY_ID - your aws account access key id
+        -  AWS_SECRET_ACCESS_KEY - your secret access key
+    3.  Ensure the lambda stack is saved in the activestate s3 bucket
+    4.  All the python dependencies are saved inside the s3 bucket as python.zip.
+    5.  Ephemeralenv.yml [file](#Script-5) needs to be saved in the s3 bucket so that [python](#Script-3) can find this script and update with the latest arn values
 
 ## Commentary of the design flow
 The process starts with creating an empty git repository and cloning it. Then we can make a directory ".github/workflows" where we save the steps that will run when the pull request is executed. An active state bucket is also created where various stacks are saved for bash execution in github workflows.
