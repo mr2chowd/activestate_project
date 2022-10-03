@@ -23,7 +23,7 @@ jobs:
     #Deletes the sanity test bucket
     steps:
       - name: Upload to S3
-        run: aws s3 rb s3://testbucket
+        run: aws s3 rb s3://testbucket2022103
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
