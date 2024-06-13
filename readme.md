@@ -1,11 +1,7 @@
 # ActiveState Ephemeral Environment Project 
 
 ### Problem Scenario: 
-
-You are a member of a team dedicated to maintaining cloud-based infrastructure, continuous 
-integration and deployment systems, data and systems access, and the build system used to manage production systems
-
-The developers you support will need to replicate the production environment to test their code and  data changes. 
+The developers I support will need to replicate the production environment to test their code and  data changes. 
 This includes running applications and services as well as accessing data that represents real systems. 
 Since code and data changes may conflict with each other, we would like to provide unique and ephemeral environments, 
 rather than testing everything in a single, shared staging or testing environment. Our task is to design processes and tooling to: 
